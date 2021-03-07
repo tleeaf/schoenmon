@@ -62,16 +62,15 @@ export default {
     };
   },
   methods: {
-    play(i) {
+    play(i,time) {
       const osc = this.audioContext.createOscillator();
       osc.frequency.setValueAtTime(
         this.frequency(i),
-        this.audioContext.currentTime
+        time
       );
-      const time = this.audioContext.currentTime;
       const attackTime = 0.2;
       const releaseTime = 0.5;
-      const sweepLength = 2;
+      const sweepLength = 1.4;
       const sweepEnv = this.audioContext.createGain();
       sweepEnv.gain.cancelScheduledValues(time);
       sweepEnv.gain.setValueAtTime(0, time);
@@ -84,27 +83,20 @@ export default {
       );
       osc.connect(sweepEnv).connect(this.audioContext.destination);
       osc.start(time);
-      osc.stop(this.audioContext.currentTime + sweepLength);
+      osc.stop(time + sweepLength);
     },
     playSeq() {
-      const osc = this.audioContext.createOscillator();
-
-      osc.start();
       for (let i = 0; i < this.seq.length; i++) {
-        osc.frequency.setValueAtTime(
-          this.frequency(this.seq[i]),
-          this.audioContext.currentTime + i
-        );
-        osc.stop(this.audioContext.currentTime + this.seq.length + 1);
+        this.play(this.seq[i],this.audioContext.currentTime + i * 1.4)
+        const id = window.setTimeout(function(){console.log("play")},1.4)
       }
-      osc.connect(this.audioContext.destination);
     },
     append() {
       this.seq.push(Math.floor(Math.random() * 12));
     },
     frequency(i) {
       const a = Math.pow(2.0, 1.0 / 12.0);
-      const factor = Math.pow(a, i);
+      const factor = Math.pow(a, i - 6);
       return 440.0 * factor;
     },
   },
