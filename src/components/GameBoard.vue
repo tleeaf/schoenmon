@@ -1,25 +1,28 @@
 <template>
   <div>
-    <div class="ma5">
+    <div class="board-container ma5">
       <div v-for="r in rows" :key="r" class="fl w-100">
         <button
           v-for="i in cols"
           :key="i"
-          @click="play(i + cols.length * r)"
+          @click="inputAnswer(i + cols.length * r)"
           :class="
-            ' br4 ma1 h4 w4 ba bw3 b--' +
+            ' grow b f1 br4 ma1 h4 w4 ba bw3 b--' +
             borderColors[i + cols.length * r] +
-            ' bg-animate hover-' +
+            ' ' +
             colors[i + cols.length * r]
           "
-        ></button>
+        >{{noteNames[i + cols.length * r]}}</button>
       </div>
     </div>
+    <div class="f-headline pr3">
+      {{ this.seq.length }}
+    </div>
     <div class="ma5 pa1">
-      <button @click="append" class="h3 w3">Start</button>
       <button @click="playSeq" class="h3 w3">Play</button>
     </div>
-    <div>{{ seq }}</div>
+    <div>{{ seq.map(i => this.noteNames[i]) }}</div>
+    <div>{{ inputSeq.map(i => this.noteNames[i])  }}</div>
   </div>
 </template>
 
@@ -41,7 +44,7 @@ export default {
         "bg-dark-green",
         "bg-blue",
         "bg-light-green",
-        "bg-navy",
+        "bg-dark-blue",
         "bg-light-blue",
       ],
       borderColors: [
@@ -55,19 +58,44 @@ export default {
         "dark-green",
         "blue",
         "light-green",
-        "navy",
+        "dark-blue",
         "light-blue",
       ],
+      noteNames: ["C","C#","D","Eb","E","F","F#","G","Ab","A","Bb","B"],
       seq: [],
+      inputSeq: [],
+      waitingForInput: false,
     };
   },
   methods: {
-    play(i,time) {
-      const osc = this.audioContext.createOscillator();
-      osc.frequency.setValueAtTime(
-        this.frequency(i),
-        time
+    inputAnswer(i) {
+      this.inputSeq.push(i);
+      this.play(i);
+      if (this.inputSeq.length >= this.seq.length) this.checkAnswer();
+    },
+    checkAnswer() {
+      if (this.arrayEquals(this.seq, this.inputSeq)) {
+        const id = window.setTimeout(() => {
+          this.playSeq();
+        }, 3000);
+      } else {
+        console.log("game over");
+        this.seq = [];
+      }
+      this.inputSeq = [];
+    },
+    arrayEquals(a, b) {
+      return (
+        Array.isArray(a) &&
+        Array.isArray(b) &&
+        a.length === b.length &&
+        a.every((val, index) => val === b[index])
       );
+    },
+    play(i, time) {
+      if (!time) time = this.audioContext.currentTime;
+      const osc = this.audioContext.createOscillator();
+      osc.frequency.setValueAtTime(this.frequency(i), time);
       const attackTime = 0.2;
       const releaseTime = 0.5;
       const sweepLength = 1.4;
@@ -86,17 +114,21 @@ export default {
       osc.stop(time + sweepLength);
     },
     playSeq() {
+      this.append();
       for (let i = 0; i < this.seq.length; i++) {
-        this.play(this.seq[i],this.audioContext.currentTime + i * 1.4)
-        const id = window.setTimeout(function(){console.log("play")},1.4)
+        this.play(this.seq[i], this.audioContext.currentTime + i * 1.4);
+        const id = window.setTimeout(function () {
+          console.log("play");
+        }, 1.4);
       }
+      this.waitingForInput = true;
     },
     append() {
       this.seq.push(Math.floor(Math.random() * 12));
     },
     frequency(i) {
       const a = Math.pow(2.0, 1.0 / 12.0);
-      const factor = Math.pow(a, i - 6);
+      const factor = Math.pow(a, i - 9);
       return 440.0 * factor;
     },
   },
@@ -104,4 +136,19 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+.simon-button {
+  opacity: 0.5;
+  :hover {
+    animation-name: fadeIn;
+    animation-duration: 1s;
+  }
+}
+@keyframes fadeIn {
+  from {
+    opacity: 0.5;
+  }
+  to {
+    opacity: 1;
+  }
+}
 </style>
