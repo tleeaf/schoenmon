@@ -1,20 +1,24 @@
 <template>
   <div>
-    <div v-for="r in rows" :key="r" class="fl w-100">
-      <button
-        v-for="i in cols"
-        :key="i"
-        @click="play(i + cols.length * r)"
-        :class="
-          ' br4 ma1 h4 w4 ba bw3 b--' +
-          borderColors[i + cols.length * r] +
-          ' bg-animate hover-' +
-          colors[i + cols.length * r]
-        "
-      ></button>
+    <div class="ma5">
+      <div v-for="r in rows" :key="r" class="fl w-100">
+        <button
+          v-for="i in cols"
+          :key="i"
+          @click="play(i + cols.length * r)"
+          :class="
+            ' br4 ma1 h4 w4 ba bw3 b--' +
+            borderColors[i + cols.length * r] +
+            ' bg-animate hover-' +
+            colors[i + cols.length * r]
+          "
+        ></button>
+      </div>
     </div>
-    <button @click="append" class="h3 w3">Start</button>
-    <button @click="playSeq" class="h3 w3">Play</button>
+    <div class="ma5 pa1">
+      <button @click="append" class="h3 w3">Start</button>
+      <button @click="playSeq" class="h3 w3">Play</button>
+    </div>
     <div>{{ seq }}</div>
   </div>
 </template>
@@ -64,12 +68,27 @@ export default {
         this.frequency(i),
         this.audioContext.currentTime
       );
-      osc.connect(this.audioContext.destination);
-      osc.start();
-      osc.stop(this.audioContext.currentTime + 0.4);
+      const time = this.audioContext.currentTime;
+      const attackTime = 0.2;
+      const releaseTime = 0.5;
+      const sweepLength = 2;
+      const sweepEnv = this.audioContext.createGain();
+      sweepEnv.gain.cancelScheduledValues(time);
+      sweepEnv.gain.setValueAtTime(0, time);
+      // set our attack
+      sweepEnv.gain.linearRampToValueAtTime(1, time + attackTime);
+      // set our release
+      sweepEnv.gain.linearRampToValueAtTime(
+        0,
+        time + sweepLength - releaseTime
+      );
+      osc.connect(sweepEnv).connect(this.audioContext.destination);
+      osc.start(time);
+      osc.stop(this.audioContext.currentTime + sweepLength);
     },
     playSeq() {
       const osc = this.audioContext.createOscillator();
+
       osc.start();
       for (let i = 0; i < this.seq.length; i++) {
         osc.frequency.setValueAtTime(
