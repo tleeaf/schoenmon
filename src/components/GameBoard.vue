@@ -1,28 +1,30 @@
 <template>
   <div>
     <div class="board-container ma5">
-      <div v-for="r in rows" :key="r" class="fl w-100">
-        <button
-          v-for="i in cols"
-          :key="i"
-          @click="inputAnswer(i + cols.length * r)"
-          :class="
-            ' grow b f1 br4 ma1 h4 w4 ba bw3 b--' +
-            borderColors[i + cols.length * r] +
-            ' ' +
-            colors[i + cols.length * r]
-          "
-        >{{noteNames[i + cols.length * r]}}</button>
-      </div>
+      <button
+        v-for="i in tones"
+        :key="i"
+        @click="inputAnswer(i)"
+        :class="
+          ' grow b f1 br-100 ma1 h4 w4 ba bw3 b--' +
+          borderColors[i] +
+          ' ' +
+          colors[i]
+        "
+      >
+        <div class="note-name">
+          {{ noteNames[i] }}
+        </div>
+      </button>
     </div>
-    <div class="f-headline pr3">
+    <div class="f-headline pr3 score">
       {{ this.seq.length }}
     </div>
     <div class="ma5 pa1">
-      <button @click="playSeq" class="h3 w3">Play</button>
+      <button @click="start" class="h3 w3">Start</button>
     </div>
-    <div>{{ seq.map(i => this.noteNames[i]) }}</div>
-    <div>{{ inputSeq.map(i => this.noteNames[i])  }}</div>
+    <div>{{ seq.map((i) => this.noteNames[i]) }}</div>
+    <div>{{ inputSeq.map((i) => this.noteNames[i]) }}</div>
   </div>
 </template>
 
@@ -30,8 +32,7 @@
 export default {
   data() {
     return {
-      rows: [0, 1, 2, 3],
-      cols: [0, 1, 2],
+      tones: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
       audioContext: new AudioContext(),
       colors: [
         "bg-red",
@@ -61,7 +62,20 @@ export default {
         "dark-blue",
         "light-blue",
       ],
-      noteNames: ["C","C#","D","Eb","E","F","F#","G","Ab","A","Bb","B"],
+      noteNames: [
+        "C",
+        "C#",
+        "D",
+        "Eb",
+        "E",
+        "F",
+        "F#",
+        "G",
+        "Ab",
+        "A",
+        "Bb",
+        "B",
+      ],
       seq: [],
       inputSeq: [],
       waitingForInput: false,
@@ -113,6 +127,10 @@ export default {
       osc.start(time);
       osc.stop(time + sweepLength);
     },
+    start() {
+      this.seq = [];
+      this.playSeq();
+    },
     playSeq() {
       this.append();
       for (let i = 0; i < this.seq.length; i++) {
@@ -150,5 +168,48 @@ export default {
   to {
     opacity: 1;
   }
+}
+
+/// Mixin to place items on a circle
+/// @author Hugo Giraudel
+/// @author Ana Tudor
+/// @param {Integer} $item-count - Number of items on the circle
+/// @param {Length} $circle-size - Large circle size
+/// @param {Length} $item-size - Single item size
+@mixin on-circle($item-count, $circle-size, $item-size) {
+  width: $circle-size;
+  height: $circle-size;
+  list-style: none;
+
+  > * {
+    display: block;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: $item-size;
+    height: $item-size;
+    margin: -($item-size / 2);
+
+    $angle: (360 / $item-count);
+    $rot: 0;
+
+    @for $i from 1 through $item-count {
+      &:nth-of-type(#{$i}) {
+        transform: rotate($rot + 1deg) translate($circle-size / 2);
+        // rotate: ($angle * -2deg);
+        > div {
+          transform: rotate(-$rot * 1deg);
+        }
+      }
+      $rot: $rot + $angle;
+    }
+  }
+}
+
+.board-container {
+  @include on-circle(12, 500px, 120px);
+}
+
+.score {
 }
 </style>
