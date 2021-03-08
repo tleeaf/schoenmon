@@ -1,30 +1,27 @@
 <template>
   <div>
     <div class="board-container ma5">
-      <button
-        v-for="i in tones"
-        :key="i"
-        @click="inputAnswer(i)"
-        :class="
-          ' grow b f1 br-100 ma1 h4 w4 ba bw3 b--' +
-          borderColors[i] +
-          ' ' +
-          colors[i]
-        "
-      >
-        <div class="note-name">
-          {{ noteNames[i] }}
-        </div>
-      </button>
+      <div v-for="i in tones" :key="i" class="br-100">
+        <button
+          @click="inputAnswer(i)"
+          class="simon-button br-100 ma1 h4 w4 bn"
+          :class="colors[i]"
+          :style="{ opacity: i === activeTone ? 1 : 0.5 }"
+        >
+          <div class="note-name f1 b">
+            {{ noteNames[i] }}
+          </div>
+        </button>
+      </div>
     </div>
-    <div class="f-headline pr3 score">
-      {{ this.seq.length }}
+    <div class="ma1 w1 center ct f-headline pr3 score">
+      {{ score }}
     </div>
-    <div class="ma5 pa1">
-      <button @click="start" class="h3 w3">Start</button>
+    <div class="score w1 center ma1">
+      <button @click="start" class="h3 w3 bn grow">Start</button>
     </div>
-    <div>{{ seq.map((i) => this.noteNames[i]) }}</div>
-    <div>{{ inputSeq.map((i) => this.noteNames[i]) }}</div>
+    <!-- <div>{{ seq.map((i) => this.noteNames[i]) }}</div>
+    <div>{{ inputSeq.map((i) => this.noteNames[i]) }}</div> -->
   </div>
 </template>
 
@@ -33,6 +30,7 @@ export default {
   data() {
     return {
       tones: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+      activeTone: null,
       audioContext: new AudioContext(),
       colors: [
         "bg-red",
@@ -47,20 +45,6 @@ export default {
         "bg-light-green",
         "bg-dark-blue",
         "bg-light-blue",
-      ],
-      borderColors: [
-        "red",
-        "light-red",
-        "gold",
-        "light-yellow",
-        "light-purple",
-        "hot-pink",
-        "light-pink",
-        "dark-green",
-        "blue",
-        "light-green",
-        "dark-blue",
-        "light-blue",
       ],
       noteNames: [
         "C",
@@ -131,13 +115,20 @@ export default {
       this.seq = [];
       this.playSeq();
     },
+    animateButtons() {
+      for (let i = 0; i < this.seq.length; i++) {
+        // const a = await delay(1400*i,this.activeTone = this.seq[i]);
+        window.setTimeout(() => {
+          this.activeTone = this.seq[i];
+        }, 1400*i);
+      }
+    },
     playSeq() {
       this.append();
       for (let i = 0; i < this.seq.length; i++) {
-        this.play(this.seq[i], this.audioContext.currentTime + i * 1.4);
-        const id = window.setTimeout(function () {
-          console.log("play");
-        }, 1.4);
+        const noteToPlay = this.seq[i];
+        this.play(noteToPlay, this.audioContext.currentTime + i * 1.4);
+        this.animateButtons();
       }
       this.waitingForInput = true;
     },
@@ -150,15 +141,43 @@ export default {
       return 440.0 * factor;
     },
   },
+  computed: {
+    score() {
+      return this.seq.length;
+    },
+    buttonClass: function (i) {
+      const colorChoices = [
+        "bg-red",
+        "bg-light-red",
+        "bg-gold",
+        "bg-light-yellow",
+        "bg-light-purple",
+        "bg-hot-pink",
+        "bg-light-pink",
+        "bg-dark-green",
+        "bg-blue",
+        "bg-light-green",
+        "bg-dark-blue",
+        "bg-light-blue",
+      ];
+      return colorChoices[0];
+    },
+  },
 };
 </script>
 
 <style lang="scss" scoped>
+button:focus {
+  outline: 0;
+}
+.active {
+  opacity: 1;
+  border: red 10px solid;
+}
 .simon-button {
-  opacity: 0.5;
-  :hover {
+  &:hover {
     animation-name: fadeIn;
-    animation-duration: 1s;
+    animation-duration: 0.5s;
   }
 }
 @keyframes fadeIn {
@@ -197,7 +216,7 @@ export default {
       &:nth-of-type(#{$i}) {
         transform: rotate($rot + 1deg) translate($circle-size / 2);
         // rotate: ($angle * -2deg);
-        > div {
+        .note-name {
           transform: rotate(-$rot * 1deg);
         }
       }
@@ -207,9 +226,10 @@ export default {
 }
 
 .board-container {
-  @include on-circle(12, 500px, 120px);
+  @include on-circle(12, 30rem, 7rem);
 }
 
 .score {
+  transform: translateY(-15rem);
 }
 </style>
