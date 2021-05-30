@@ -16,24 +16,28 @@
     <div class="v-mid">
       <div class="f3 mv5" v-show="gameOver">Game Over</div>
       <div class="">
-        <button @click="start" v-show="!playing" class="h3-ns w3-ns h3 w3 br-100 grow">
+        <button
+          @click="start"
+          v-show="!playing"
+          class="h3-ns w3-ns h3 w3 br-100 grow"
+        >
           Start
         </button>
       </div>
-      <div >
+      <div>
         <span v-show="playing" class="f-headline-ns f1">
           {{ score }}
         </span>
       </div>
     </div>
-<!-- 
+
     <div>
-      {{seq}}
+      {{ seq }}
     </div>
     <div>
-      {{inputSeq}}
-    </div> -->
-    
+      {{ inputSeq }}
+    </div>
+
     <!-- <div>{{ seq.map((i) => this.noteNames[i]) }}</div>
     <div>{{ inputSeq.map((i) => this.noteNames[i]) }}</div> -->
   </div>
@@ -80,28 +84,33 @@ export default {
       waitingForInput: false,
       playing: false,
       gameOver: false,
-      states: {playing: 'playing', gameover: 'gameover', start: 'start'}
+      states: { playing: "playing", gameover: "gameover", start: "start" },
+      currentState: null,
+      currentIndex: 0,
     };
   },
   methods: {
     inputAnswer(i) {
       this.inputSeq.push(i);
       this.play(i);
-      if(this.inputSeq.length === this.seq.length){
-        this.checkAnswer();
-      }
+      this.checkAnswer();
     },
     checkAnswer() {
-      // if (this.arrayEquals(this.seq, this.inputSeq)) {
-        if(this.inputSeq[this.inputSeq.length-1] === this.seq[this.seq.length-1]){
-        window.setTimeout(() => {
-          this.playSeq();
-        }, this.interval + 500);
+      const seqNum = this.inputSeq.length - 1;
+      if (this.inputSeq[seqNum] === this.seq[seqNum]) {
+        if (seqNum === this.seq.length - 1) {
+          window.setTimeout(() => {
+            this.playSeq();
+          }, this.interval + 500);
+        }
       } else {
+        this.currentState = this.states.gameOver;
         this.gameOver = true;
-        this.seq = [];
+        this.playing = false;
+        this.seq = this.inputSeq = [];
       }
-      this.inputSeq = [];
+      
+      // this.interval *= 0.9
     },
     arrayEquals(a, b) {
       return (
@@ -134,7 +143,9 @@ export default {
     },
     start() {
       this.seq = [];
+      this.currentState = this.states.playing;
       this.playing = true;
+      this.gameOver = false;
       this.playSeq();
     },
     animateButtons() {
@@ -148,7 +159,8 @@ export default {
       }
     },
     playSeq() {
-      this.append();
+      this.inputSeq = [];
+      this.addTone();
       for (let i = 0; i < this.seq.length; i++) {
         const noteToPlay = this.seq[i];
         this.play(
@@ -159,7 +171,7 @@ export default {
       }
       this.waitingForInput = true;
     },
-    append() {
+    addTone() {
       this.seq.push(Math.floor(Math.random() * 12));
     },
     frequency(i) {
@@ -177,6 +189,9 @@ export default {
     score() {
       return this.seq.length;
     },
+  },
+  mounted() {
+    this.currentState = this.states.start;
   },
 };
 </script>
