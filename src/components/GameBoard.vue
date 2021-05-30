@@ -1,25 +1,39 @@
 <template>
-  <div>
-    <div class="board-container ma5">
+  <div class="vh-100">
+    <div class="board-container ma1">
       <div v-for="i in tones" :key="i" class="br-100">
         <button
           @click="inputAnswer(i)"
-          class="simon-button br-100 ma1 h4 w4 bn"
-          :class="colors[i]"
-          :style="{ opacity: i === activeTone ? 1 : 0.5 }"
+          class="simon-button br-100 ma1 h4-ns w4-ns h3 w3 bn"
+          :class="btnClass(i)"
         >
-          <div class="note-name f1 b">
+          <div class="note-name f4 f1-ns b">
             {{ noteNames[i] }}
           </div>
         </button>
       </div>
     </div>
-    <div class="ma1 w1 center ct f-headline pr3 score">
-      {{ score }}
+    <div class="v-mid">
+      <div class="f3 mv5" v-show="gameOver">Game Over</div>
+      <div class="">
+        <button @click="start" v-show="!playing" class="h3-ns w3-ns h3 w3 br-100 grow">
+          Start
+        </button>
+      </div>
+      <div >
+        <span v-show="playing" class="f-headline-ns f1">
+          {{ score }}
+        </span>
+      </div>
     </div>
-    <div class="score w1 center ma1">
-      <button @click="start" class="h3 w3 bn grow">Start</button>
+<!-- 
+    <div>
+      {{seq}}
     </div>
+    <div>
+      {{inputSeq}}
+    </div> -->
+    
     <!-- <div>{{ seq.map((i) => this.noteNames[i]) }}</div>
     <div>{{ inputSeq.map((i) => this.noteNames[i]) }}</div> -->
   </div>
@@ -30,6 +44,7 @@ export default {
   data() {
     return {
       tones: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+      interval: 1000,
       activeTone: null,
       audioContext: new AudioContext(),
       colors: [
@@ -37,14 +52,14 @@ export default {
         "bg-light-red",
         "bg-gold",
         "bg-light-yellow",
+        "bg-light-green",
+        "bg-dark-green",
+        "bg-light-blue",
+        "bg-blue",
+        "bg-dark-blue",
         "bg-light-purple",
         "bg-hot-pink",
         "bg-light-pink",
-        "bg-dark-green",
-        "bg-blue",
-        "bg-light-green",
-        "bg-dark-blue",
-        "bg-light-blue",
       ],
       noteNames: [
         "C",
@@ -63,21 +78,27 @@ export default {
       seq: [],
       inputSeq: [],
       waitingForInput: false,
+      playing: false,
+      gameOver: false,
+      states: {playing: 'playing', gameover: 'gameover', start: 'start'}
     };
   },
   methods: {
     inputAnswer(i) {
       this.inputSeq.push(i);
       this.play(i);
-      if (this.inputSeq.length >= this.seq.length) this.checkAnswer();
+      if(this.inputSeq.length === this.seq.length){
+        this.checkAnswer();
+      }
     },
     checkAnswer() {
-      if (this.arrayEquals(this.seq, this.inputSeq)) {
-        const id = window.setTimeout(() => {
+      // if (this.arrayEquals(this.seq, this.inputSeq)) {
+        if(this.inputSeq[this.inputSeq.length-1] === this.seq[this.seq.length-1]){
+        window.setTimeout(() => {
           this.playSeq();
-        }, 3000);
+        }, this.interval + 500);
       } else {
-        console.log("game over");
+        this.gameOver = true;
         this.seq = [];
       }
       this.inputSeq = [];
@@ -113,21 +134,27 @@ export default {
     },
     start() {
       this.seq = [];
+      this.playing = true;
       this.playSeq();
     },
     animateButtons() {
       for (let i = 0; i < this.seq.length; i++) {
-        // const a = await delay(1400*i,this.activeTone = this.seq[i]);
         window.setTimeout(() => {
           this.activeTone = this.seq[i];
-        }, 1400*i);
+        }, this.interval * i);
+        window.setTimeout(() => {
+          this.activeTone = null;
+        }, this.interval * this.seq.length);
       }
     },
     playSeq() {
       this.append();
       for (let i = 0; i < this.seq.length; i++) {
         const noteToPlay = this.seq[i];
-        this.play(noteToPlay, this.audioContext.currentTime + i * 1.4);
+        this.play(
+          noteToPlay,
+          this.audioContext.currentTime + (i * this.interval) / 1000
+        );
         this.animateButtons();
       }
       this.waitingForInput = true;
@@ -140,27 +167,15 @@ export default {
       const factor = Math.pow(a, i - 9);
       return 440.0 * factor;
     },
+    btnClass: function (i) {
+      return this.colors[i].concat(
+        i === this.activeTone ? " active" : " inactive"
+      );
+    },
   },
   computed: {
     score() {
       return this.seq.length;
-    },
-    buttonClass: function (i) {
-      const colorChoices = [
-        "bg-red",
-        "bg-light-red",
-        "bg-gold",
-        "bg-light-yellow",
-        "bg-light-purple",
-        "bg-hot-pink",
-        "bg-light-pink",
-        "bg-dark-green",
-        "bg-blue",
-        "bg-light-green",
-        "bg-dark-blue",
-        "bg-light-blue",
-      ];
-      return colorChoices[0];
     },
   },
 };
@@ -172,12 +187,15 @@ button:focus {
 }
 .active {
   opacity: 1;
-  border: red 10px solid;
+}
+.inactive {
+  opacity: 0.6;
 }
 .simon-button {
   &:hover {
     animation-name: fadeIn;
-    animation-duration: 0.5s;
+    animation-duration: 0.7s;
+    animation-fill-mode: forwards;
   }
 }
 @keyframes fadeIn {
@@ -188,6 +206,11 @@ button:focus {
     opacity: 1;
   }
 }
+
+$board-size-ns: 50vh;
+$item-size-ns: 10vh;
+$board-size: 65vw;
+$item-size: 10vw;
 
 /// Mixin to place items on a circle
 /// @author Hugo Giraudel
@@ -225,11 +248,25 @@ button:focus {
   }
 }
 
-.board-container {
-  @include on-circle(12, 30rem, 7rem);
+@media only screen and(min-width: 600px) {
+  .board-container {
+    @include on-circle(12, $board-size-ns, $item-size-ns);
+  }
+}
+
+@media only screen and(max-width: 600px) {
+  body {
+    background-color: red;
+    color: red;
+  }
+  .board-container {
+    @include on-circle(12, $board-size, $item-size);
+  }
 }
 
 .score {
-  transform: translateY(-15rem);
+  position: absolute;
+  bottom: 43vh;
+  left: 47vw;
 }
 </style>
