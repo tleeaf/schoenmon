@@ -30,13 +30,13 @@
         </span>
       </div>
     </div>
-
+<!-- 
     <div>
       {{ seq }}
     </div>
     <div>
       {{ inputSeq }}
-    </div>
+    </div> -->
 
     <!-- <div>{{ seq.map((i) => this.noteNames[i]) }}</div>
     <div>{{ inputSeq.map((i) => this.noteNames[i]) }}</div> -->
@@ -207,6 +207,9 @@ button:focus {
   opacity: 0.6;
 }
 .simon-button {
+  -moz-box-shadow: inset 0 0 10px #000000;
+  -webkit-box-shadow: inset 0 0 10px #000000;
+  box-shadow: inset 0 0 10px #000000;
   &:hover {
     animation-name: fadeIn;
     animation-duration: 0.7s;
