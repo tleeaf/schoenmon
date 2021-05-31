@@ -30,7 +30,7 @@
         </span>
       </div>
     </div>
-<!-- 
+    <!-- 
     <div>
       {{ seq }}
     </div>
@@ -49,6 +49,7 @@ export default {
     return {
       tones: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
       interval: 1000,
+      speed: 0.17,
       activeTone: null,
       audioContext: new AudioContext(),
       colors: [
@@ -87,6 +88,7 @@ export default {
       states: { playing: "playing", gameover: "gameover", start: "start" },
       currentState: null,
       currentIndex: 0,
+      startPitch: 220,
     };
   },
   methods: {
@@ -100,8 +102,10 @@ export default {
       if (this.inputSeq[seqNum] === this.seq[seqNum]) {
         if (seqNum === this.seq.length - 1) {
           window.setTimeout(() => {
+            this.inputSeq = [];
+            this.addRandomTone();
             this.playSeq();
-          }, this.interval + 500);
+          }, this.interval * this.speed + 500);
         }
       } else {
         this.currentState = this.states.gameOver;
@@ -109,7 +113,7 @@ export default {
         this.playing = false;
         this.seq = this.inputSeq = [];
       }
-      
+
       // this.interval *= 0.9
     },
     arrayEquals(a, b) {
@@ -124,9 +128,9 @@ export default {
       if (!time) time = this.audioContext.currentTime;
       const osc = this.audioContext.createOscillator();
       osc.frequency.setValueAtTime(this.frequency(i), time);
-      const attackTime = 0.2;
-      const releaseTime = 0.5;
-      const sweepLength = 1.4;
+      const attackTime = 0.2 * this.speed;
+      const releaseTime = 0.5 * this.speed;
+      const sweepLength = 1.4 * this.speed;
       const sweepEnv = this.audioContext.createGain();
       sweepEnv.gain.cancelScheduledValues(time);
       sweepEnv.gain.setValueAtTime(0, time);
@@ -146,38 +150,39 @@ export default {
       this.currentState = this.states.playing;
       this.playing = true;
       this.gameOver = false;
+      this.inputSeq = [];
+      this.addRandomTone();
       this.playSeq();
     },
     animateButtons() {
       for (let i = 0; i < this.seq.length; i++) {
         window.setTimeout(() => {
           this.activeTone = this.seq[i];
-        }, this.interval * i);
+        }, this.interval * this.speed * i);
         window.setTimeout(() => {
           this.activeTone = null;
-        }, this.interval * this.seq.length);
+        }, this.interval * this.speed * this.seq.length);
       }
     },
     playSeq() {
-      this.inputSeq = [];
-      this.addTone();
       for (let i = 0; i < this.seq.length; i++) {
         const noteToPlay = this.seq[i];
         this.play(
           noteToPlay,
-          this.audioContext.currentTime + (i * this.interval) / 1000
+          this.audioContext.currentTime +
+            (i * this.interval * this.speed) / 1000
         );
         this.animateButtons();
       }
       this.waitingForInput = true;
     },
-    addTone() {
+    addRandomTone() {
       this.seq.push(Math.floor(Math.random() * 12));
     },
     frequency(i) {
       const a = Math.pow(2.0, 1.0 / 12.0);
       const factor = Math.pow(a, i - 9);
-      return 440.0 * factor;
+      return this.startPitch * factor;
     },
     btnClass: function (i) {
       return this.colors[i].concat(
