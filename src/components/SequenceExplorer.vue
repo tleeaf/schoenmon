@@ -3,7 +3,7 @@
     <section>
       <h2>Triadic-Chromatic Sequence Generator</h2>
     </section>
-    <section class="flex flex-wrap">
+    <section class="flex flex-wrap justify-center">
       <div class="ma4">
         <h3>Sequence Length</h3>
         <input class="ma4" type="number" v-model="triadNum" />
@@ -88,6 +88,7 @@
           >
             Clear
           </button>
+          <button @click="playTone" class="f6 link dim br1 ph3 pv2 mb2 dib white bg-black">Play Tone</button>
         </div>
       </div>
     </section>
@@ -99,17 +100,18 @@
 import { triads } from "../triads.js";
 import * as utility from "../utility.js";
 import Vex from "vexflow";
+import * as Tone from 'tone'
 import { Instrument } from "piano-chart";
 
 export default {
   data() {
     return {
       interval: 1000,
-      speed: 0.12,
+      speed: 0.2,
       activeTone: null,
       audioContext: new AudioContext(),
       seq: [],
-      startPitch: 262 * 2, //middle C (c3)
+      startPitch: 262, //middle C (c3)
       triadNum: 3,
       triads: triads,
       triadPattern: [triads[0]],
@@ -120,6 +122,10 @@ export default {
     };
   },
   methods: {
+    playTone(){
+      const synth = new Tone.Synth().toDestination();
+      synth.triggerAttackRelease("C4","8n")
+    },
     clear() {
       this.triadPattern = [];
       this.halfStepPattern = [];
