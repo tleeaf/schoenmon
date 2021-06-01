@@ -1,48 +1,105 @@
 <template>
-  <div class="vh-100">
-    <div>
-      <h3>Sequence Length</h3>
-      <input class="ma4" type="number" :value="triadNum" />
-    </div>
-    <div class="ma4">
-      <h3>Half Steps</h3>
-      <div class="ma3">
-        <button @click="addHalfStep(1)">Add 1</button>
-        <button @click="addHalfStep(-1)">Add -1</button>
+  <div>
+    <section>
+      <h2>Triadic-Chromatic Sequence Generator</h2>
+    </section>
+    <section class="flex flex-wrap">
+      <div class="ma4">
+        <h3>Sequence Length</h3>
+        <input class="ma4" type="number" v-model="triadNum" />
       </div>
-      <span v-for="step in halfStepPattern" :key="step" class="ma1 pa1 ba">{{
-        step
-      }}</span>
-    </div>
+      <div class="ma4">
+        <h3>Half Steps</h3>
+        <div class="ma3">
+          <button
+            @click="addHalfStep(1)"
+            class="f6 link dim br1 ph3 pv2 mb2 dib white bg-black"
+          >
+            Up
+          </button>
+          <button
+            @click="addHalfStep(-1)"
+            class="f6 link dim br1 ph3 pv2 mb2 dib white bg-black"
+          >
+            Down
+          </button>
+        </div>
+        <span v-for="step in halfStepPattern" :key="step" class="ma1 pa1 ba">{{
+          step
+        }}</span>
+      </div>
 
-    <div class="ma4">
-      <h3>Triad Pattern</h3>
-      <div class="ma3">
-        <button v-for="tri in triads" :key="tri" @click="addTriad(tri)">
-          {{ tri.name }}
-        </button>
+      <div class="ma4">
+        <h3>Triad Pattern</h3>
+        <div class="ma3">
+          <button
+            v-for="tri in triads"
+            :key="tri.name"
+            @click="addTriad(tri)"
+            class="f6 link dim br1 ph3 pv2 mb2 dib white bg-black"
+          >
+            {{ tri.name }}
+          </button>
+        </div>
+        <span v-for="tri in triadPattern" :key="tri.name" class="ma1 pa1 ba">{{
+          tri.name
+        }}</span>
       </div>
-      <span v-for="tri in triadPattern" :key="tri" class="ma1 pa1 ba">{{
-        tri.name
-      }}</span>
-    </div>
-    <div>
-      <div>
-        <button @click="testSeq" class="h3-ns w3-ns h3 w3 grow">
-          Play Test Seq
-        </button>
+
+      <div class="ma4">
+        <h3>Direction Pattern</h3>
+        <div class="ma3">
+          <button
+            @click="directionPattern.push(1)"
+            class="f6 link dim br1 ph3 pv2 mb2 dib white bg-black"
+          >
+            Up
+          </button>
+          <button
+            @click="directionPattern.push(-1)"
+            class="f6 link dim br1 ph3 pv2 mb2 dib white bg-black"
+          >
+            Down
+          </button>
+        </div>
+        <div class="ma3">
+          <span v-for="dir in directionPattern" :key="dir" class="ma1 pa1 ba">{{
+            dir
+          }}</span>
+        </div>
       </div>
-      <div>
-        <button @click="clear">Clear</button>
+      <!-- <div id="boo"></div> -->
+    </section>
+    <section>
+      <div class="ma4">
+        <h3>Play Seqence</h3>
+        <div>
+          <button
+            @click="testSeq"
+            class="f6 link dim br1 ph3 pv2 mb2 dib white bg-black"
+          >
+            Play
+          </button>
+        </div>
+        <div>
+          <button
+            @click="clear"
+            class="f6 link dim br1 ph3 pv2 mb2 dib white bg-black"
+          >
+            Clear
+          </button>
+        </div>
       </div>
-    </div>
-    <div id="boo"></div>
+    </section>
+    <section id="pianoContainer"></section>
   </div>
 </template>
 
 <script>
 import { triads } from "../triads.js";
+import * as utility from "../utility.js";
 import Vex from "vexflow";
+import { Instrument } from "piano-chart";
 
 export default {
   data() {
@@ -52,17 +109,23 @@ export default {
       activeTone: null,
       audioContext: new AudioContext(),
       seq: [],
-      startPitch: 262, //middle C (c3)
-      triadNum: 5,
+      startPitch: 262 * 2, //middle C (c3)
+      triadNum: 3,
       triads: triads,
-      triadPattern: [],
-      halfStepPattern: [1, -1],
+      triadPattern: [triads[0]],
+      halfStepPattern: [-1],
+      directionPattern: [1],
+      piano: null,
+      noteSequence: [],
     };
   },
   methods: {
     clear() {
       this.triadPattern = [];
       this.halfStepPattern = [];
+      this.directionPattern = [];
+      this.noteSequence = [];
+      this.triadNum = 3;
     },
     addTriad(tri) {
       this.triadPattern.push(tri);
@@ -70,23 +133,36 @@ export default {
     addHalfStep(i) {
       this.halfStepPattern.push(i);
     },
+    nextTriad(sequence, i) {
+      const max = sequence.reduce((a, b) => {
+        return Math.max(a, b);
+      });
+      const min = sequence.reduce((a, b) => {
+        return Math.min(a, b);
+      });
+      const halfStep = utility.getCycle(this.halfStepPattern, i);
+      const startingPoint = sequence[sequence.length - 1] + halfStep;
+      let subSeq = utility.getCycle(this.triadPattern, i).tones.map((x) => x); //get the next triad shape
+      // console.log(subSeq)
+      if (utility.getCycle(this.directionPattern, i) < 0) {
+        subSeq = subSeq.map((x) => -1 * x);
+      }
+      subSeq = subSeq.map((x) => x + startingPoint);
+      return subSeq;
+    },
     testSeq() {
+      this.clearAllNotes();
       this.seq = [];
       for (let i = 0; i < this.triadNum; i++) {
-        if (i > 0) {
-          const max = this.seq.reduce((a, b) => {
-            return Math.max(a, b);
-          });
-          this.seq = this.seq.concat(
-            this.triadPattern[i % this.triadPattern.length].tones.map(
-              (x) =>
-                x + max + this.halfStepPattern[i % this.halfStepPattern.length]
-            )
-          );
-        } else {
-          this.seq = this.seq.concat(this.triadPattern[0].tones);
-        }
+        let next =
+          i > 0
+            ? this.nextTriad(this.seq, i)
+            : this.triadPattern[i].tones.map((x) => x);
+        if (utility.getCycle(this.directionPattern, i) < 0)
+          next = next.reverse();
+        this.seq = this.seq.concat(next);
       }
+      this.noteSequence = utility.convertSequence(this.seq);
       this.playSeq();
     },
     play(i, time) {
@@ -110,15 +186,22 @@ export default {
       osc.start(time);
       osc.stop(time + sweepLength);
     },
-    playSeq() {
-      for (let i = 0; i < this.seq.length; i++) {
-        const noteToPlay = this.seq[i];
-        this.play(
-          noteToPlay,
-          this.audioContext.currentTime +
-            (i * this.interval * this.speed) / 1000
-        );
+    clearAllNotes(){
+      for(let i = 0; i < this.noteSequence.length; i++){
+        this.piano.keyUp(this.noteSequence[i]);
       }
+    },
+    playSeq() {
+      const p = this.piano;
+      const ns = this.noteSequence;
+      const inter = this.interval * this.speed;
+      for (let i = 0; i < this.seq.length; i++) {
+        setTimeout(function(){
+          p.keyDown(ns[i]);
+        },inter*i)
+        this.play(this.seq[i],this.audioContext.currentTime + (i * this.interval * this.speed) / 1000);
+      }
+      // setTimeout(this.clearAllNotes,ns.length*inter)
     },
     frequency(i) {
       const a = Math.pow(2.0, 1.0 / 12.0);
@@ -127,22 +210,31 @@ export default {
     },
   },
   mounted() {
-    const vf = new Vex.Flow.Factory({
-      renderer: { elementId: "boo", width: 500, height: 200 },
-    });
+    this.piano = new Instrument(document.getElementById("pianoContainer"));
+    this.piano.create();
 
-    const score = vf.EasyScore();
-    const system = vf.System();
+    // const vf = new Vex.Flow.Factory({
+    //   renderer: { elementId: "boo", width: 500, height: 200 },
+    // });
 
-    system
-      .addStave({
-        voices: [
-          score.voice(score.tuplet(score.beam(score.notes("C#4/8, C4, C4"))).concat(score.tuplet(score.beam(score.notes("C#4/8, C4, C4")))).concat(score.tuplet(score.beam(score.notes("C#4/8, C4, C4")))).concat(score.tuplet(score.beam(score.notes("C#4/8, C4, C4"))))),
-        ],
-      })
-      .addClef("treble")
+    // const score = vf.EasyScore();
+    // const system = vf.System();
 
-    vf.draw();
+    // system
+    //   .addStave({
+    //     voices: [
+    //       score.voice(
+    //         score
+    //           .tuplet(score.beam(score.notes("C#4/8, C4, C4")))
+    //           .concat(score.tuplet(score.beam(score.notes("C#4/8, C4, C4"))))
+    //           .concat(score.tuplet(score.beam(score.notes("C#4/8, C4, C4"))))
+    //           .concat(score.tuplet(score.beam(score.notes("C#4/8, C4, C4"))))
+    //       ),
+    //     ],
+    //   })
+    //   .addClef("treble");
+
+    // vf.draw();
   },
 };
 </script>

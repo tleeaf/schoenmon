@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "core-js": "^3.6.5",
+    "piano-chart": "^1.5.0",
     "vexflow": "^3.0.9",
     "vue": "^2.6.11",
     "vue-class-component": "^7.2.3",

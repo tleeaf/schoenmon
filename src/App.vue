@@ -3,10 +3,10 @@
     <!-- <img alt="Vue logo" src="./assets/logo.png" /> -->
     <!-- <HelloWorld msg="Welcome to Your Vue.js + TypeScript App" />
      -->
-    <div>
-      <button @click="seqExp = true" v-show="!seqExp">Sequence Explorer</button>
-      <button @click="seqExp = false" v-show="seqExp">Game</button>
-      </div>
+    <nav class="ma5">
+      <button @click="seqExp = true" v-show="!seqExp" class="f6 link dim ph3 pv2 mb2 dib white bg-black">Sequence Explorer</button>
+      <button @click="seqExp = false" v-show="seqExp" class="f6 link dim ph3 pv2 mb2 dib white bg-black">Game</button>
+      </nav>
     <game-board v-show="!seqExp"></game-board>
     <sequence-explorer v-show="seqExp"></sequence-explorer>
   </div>
