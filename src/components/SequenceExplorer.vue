@@ -88,11 +88,19 @@
           >
             Clear
           </button>
-          <button @click="playTone" class="f6 link dim br1 ph3 pv2 mb2 dib white bg-black">Play Tone</button>
+          <button
+            @click="stop"
+            class="f6 link dim br1 ph3 pv2 mb2 dib white bg-black"
+          >
+            Stop
+          </button>
+          <!-- <button @click="playTone" class="f6 link dim br1 ph3 pv2 mb2 dib white bg-black">Play Tone</button> -->
         </div>
       </div>
     </section>
-    <section id="pianoContainer"></section>
+    <section>
+      <piano-chart :sequence="seq" :interval="interval"></piano-chart>
+    </section>
   </div>
 </template>
 
@@ -100,16 +108,18 @@
 import { triads } from "../triads.js";
 import * as utility from "../utility.js";
 import Vex from "vexflow";
-import * as Tone from 'tone'
-import { Instrument } from "piano-chart";
+import * as Tone from "tone";
+import PianoChart from './PianoChart.vue';
 
 export default {
+  name: "SequenceExplorer",
+  components: {
+    PianoChart,
+  },
   data() {
     return {
       interval: 1000,
       speed: 0.2,
-      activeTone: null,
-      audioContext: new AudioContext(),
       seq: [],
       startPitch: 262, //middle C (c3)
       triadNum: 3,
@@ -117,15 +127,11 @@ export default {
       triadPattern: [triads[0]],
       halfStepPattern: [-1],
       directionPattern: [1],
-      piano: null,
       noteSequence: [],
+      tone: new Tone.Synth().toDestination(),
     };
   },
   methods: {
-    playTone(){
-      const synth = new Tone.Synth().toDestination();
-      synth.triggerAttackRelease("C4","8n")
-    },
     clear() {
       this.triadPattern = [];
       this.halfStepPattern = [];
@@ -171,43 +177,22 @@ export default {
       this.noteSequence = utility.convertSequence(this.seq);
       this.playSeq();
     },
-    play(i, time) {
-      if (!time) time = this.audioContext.currentTime;
-      const osc = this.audioContext.createOscillator();
-      osc.frequency.setValueAtTime(this.frequency(i), time);
-      const attackTime = 0.2 * this.speed;
-      const releaseTime = 0.5 * this.speed;
-      const sweepLength = 1.4 * this.speed;
-      const sweepEnv = this.audioContext.createGain();
-      sweepEnv.gain.cancelScheduledValues(time);
-      sweepEnv.gain.setValueAtTime(0, time);
-      // set our attack
-      sweepEnv.gain.linearRampToValueAtTime(1, time + attackTime);
-      // set our release
-      sweepEnv.gain.linearRampToValueAtTime(
-        0,
-        time + sweepLength - releaseTime
-      );
-      osc.connect(sweepEnv).connect(this.audioContext.destination);
-      osc.start(time);
-      osc.stop(time + sweepLength);
+    stop() {
+      Tone.Transport.stop();
     },
-    clearAllNotes(){
-      for(let i = 0; i < this.noteSequence.length; i++){
+    clearAllNotes() {
+      for (let i = 0; i < this.noteSequence.length; i++) {
         this.piano.keyUp(this.noteSequence[i]);
       }
     },
     playSeq() {
-      const p = this.piano;
-      const ns = this.noteSequence;
-      const inter = this.interval * this.speed;
-      for (let i = 0; i < this.seq.length; i++) {
-        setTimeout(function(){
-          p.keyDown(ns[i]);
-        },inter*i)
-        this.play(this.seq[i],this.audioContext.currentTime + (i * this.interval * this.speed) / 1000);
-      }
-      // setTimeout(this.clearAllNotes,ns.length*inter)
+      const seq = new Tone.Sequence((time, note) => {
+        this.tone.triggerAttackRelease(note, 0.1, time);
+        // subdivisions are given as subarrays
+      }, this.noteSequence).start(0);
+      seq.loop = false;
+      Tone.Transport.bpm.value = 200;
+      Tone.Transport.start();
     },
     frequency(i) {
       const a = Math.pow(2.0, 1.0 / 12.0);
@@ -216,16 +201,11 @@ export default {
     },
   },
   mounted() {
-    this.piano = new Instrument(document.getElementById("pianoContainer"));
-    this.piano.create();
-
     // const vf = new Vex.Flow.Factory({
     //   renderer: { elementId: "boo", width: 500, height: 200 },
     // });
-
     // const score = vf.EasyScore();
     // const system = vf.System();
-
     // system
     //   .addStave({
     //     voices: [
@@ -239,7 +219,6 @@ export default {
     //     ],
     //   })
     //   .addClef("treble");
-
     // vf.draw();
   },
 };
