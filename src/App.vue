@@ -21,7 +21,7 @@ import SequenceExplorer from "./components/SequenceExplorer.vue";
 @Component({
   data() {
     return {
-      seqExp: false
+      seqExp: true
     }
   },
   components: {

@@ -1,6 +1,6 @@
 <template>
   <div>
-    <section id="pianoContainer"></section>
+    <div id="pianoContainer" ref="pianoContainer"></div>
   </div>
 </template>
 
@@ -11,35 +11,58 @@ export default {
   name: "PianoChart",
   data() {
     return {
-      piano: null,
-      noteSequence: [],
+      piano: null
     };
   },
   props: {
-      sequence: {
-          type: Array,
-          default: () => { return ["C3","G3"]} 
+    sequence: {
+      type: Array,
+      default: () => {
+        return [];
       },
-      interval: {
-          type: Number,
-          default: 1000
-      }
+    },
+    interval: {
+      type: Number,
+      default: 200,
+    },
   },
   methods: {
     test() {
+      this.clearAllNotes();
+      const p  = this.piano
+      const s = this.sequence
       for (let i = 0; i < this.sequence.length; i++) {
         setTimeout(function () {
-          this.piano.keyDown(this.sequence);
+          p.keyDown(s[i]);
         }, this.interval * i);
       }
     },
+    clearAllNotes() {
+      // console.log(this.sequence)
+      if (this.sequence.length) {
+        for (let i = 0; i < this.sequence.length; i++) {
+          this.piano.keyUp(this.sequence[i]);
+        }
+      }
+    },
+  },
+  watch: {
+    sequence: {
+      deep: true,
+      handler: function (newValue, oldValue) {
+        this.test();
+      },
+    },
   },
   mounted() {
-    this.piano = new Instrument(document.getElementById("pianoContainer"));
+    this.piano = new Instrument(this.$refs.pianoContainer);
     this.piano.create();
   },
 };
 </script>
 
 <style lang="scss" scoped>
+#pianoContainer{
+  min-height: 200px;
+}
 </style>

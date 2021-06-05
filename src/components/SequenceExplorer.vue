@@ -24,7 +24,7 @@
             Down
           </button>
         </div>
-        <span v-for="step in halfStepPattern" :key="step" class="ma1 pa1 ba">{{
+        <span v-for="(step,index) in halfStepPattern" :key="index" class="ma1 pa1 ba">{{
           step
         }}</span>
       </div>
@@ -33,15 +33,15 @@
         <h3>Triad Pattern</h3>
         <div class="ma3">
           <button
-            v-for="tri in triads"
-            :key="tri.name"
+            v-for="(tri,index) in triads"
+            :key="index"
             @click="addTriad(tri)"
             class="f6 link dim br1 ph3 pv2 mb2 dib white bg-black"
           >
             {{ tri.name }}
           </button>
         </div>
-        <span v-for="tri in triadPattern" :key="tri.name" class="ma1 pa1 ba">{{
+        <span v-for="(tri,index) in triadPattern" :key="index" class="ma1 pa1 ba">{{
           tri.name
         }}</span>
       </div>
@@ -63,7 +63,7 @@
           </button>
         </div>
         <div class="ma3">
-          <span v-for="dir in directionPattern" :key="dir" class="ma1 pa1 ba">{{
+          <span v-for="(dir,index) in directionPattern" :key="index" class="ma1 pa1 ba">{{
             dir
           }}</span>
         </div>
@@ -74,8 +74,18 @@
       <div class="ma4">
         <h3>Play Seqence</h3>
         <div>
+          <input
+            type="range"
+            min="30"
+            max="500"
+            value="120"
+            class="slider"
+            v-model="bpm"
+          />
+        </div>
+        <div>
           <button
-            @click="testSeq"
+            @click="playSeq"
             class="f6 link dim br1 ph3 pv2 mb2 dib white bg-black"
           >
             Play
@@ -99,7 +109,10 @@
       </div>
     </section>
     <section>
-      <piano-chart :sequence="seq" :interval="interval"></piano-chart>
+      <notation  :noteSequence="noteSequence"></notation>
+    </section>
+    <section>
+      <piano-chart :sequence="noteSequence" :interval="interval"></piano-chart>
     </section>
   </div>
 </template>
@@ -107,36 +120,37 @@
 <script>
 import { triads } from "../triads.js";
 import * as utility from "../utility.js";
-import Vex from "vexflow";
 import * as Tone from "tone";
-import PianoChart from './PianoChart.vue';
+import PianoChart from "./PianoChart.vue";
+import Notation from "./Notation.vue";
 
 export default {
   name: "SequenceExplorer",
   components: {
     PianoChart,
+    Notation,
   },
   data() {
     return {
       interval: 1000,
       speed: 0.2,
-      seq: [],
       startPitch: 262, //middle C (c3)
       triadNum: 3,
       triads: triads,
       triadPattern: [triads[0]],
       halfStepPattern: [-1],
       directionPattern: [1],
-      noteSequence: [],
       tone: new Tone.Synth().toDestination(),
+      toneSequence: null,
+      bpm: 120,
     };
   },
   methods: {
     clear() {
-      this.triadPattern = [];
-      this.halfStepPattern = [];
-      this.directionPattern = [];
-      this.noteSequence = [];
+      this.triadPattern = [triads[0]];
+      this.halfStepPattern = [-1];
+      this.directionPattern = [1];
+      // this.noteSequence = [];
       this.triadNum = 3;
     },
     addTriad(tri) {
@@ -162,36 +176,17 @@ export default {
       subSeq = subSeq.map((x) => x + startingPoint);
       return subSeq;
     },
-    testSeq() {
-      this.clearAllNotes();
-      this.seq = [];
-      for (let i = 0; i < this.triadNum; i++) {
-        let next =
-          i > 0
-            ? this.nextTriad(this.seq, i)
-            : this.triadPattern[i].tones.map((x) => x);
-        if (utility.getCycle(this.directionPattern, i) < 0)
-          next = next.reverse();
-        this.seq = this.seq.concat(next);
-      }
-      this.noteSequence = utility.convertSequence(this.seq);
-      this.playSeq();
-    },
     stop() {
       Tone.Transport.stop();
     },
-    clearAllNotes() {
-      for (let i = 0; i < this.noteSequence.length; i++) {
-        this.piano.keyUp(this.noteSequence[i]);
-      }
-    },
     playSeq() {
-      const seq = new Tone.Sequence((time, note) => {
+      const now = Tone.now();
+      this.toneSequence = new Tone.Sequence((time, note) => {
         this.tone.triggerAttackRelease(note, 0.1, time);
         // subdivisions are given as subarrays
       }, this.noteSequence).start(0);
-      seq.loop = false;
-      Tone.Transport.bpm.value = 200;
+      this.toneSequence.loop = false;
+      Tone.Transport.bpm.value = this.bpm;
       Tone.Transport.start();
     },
     frequency(i) {
@@ -200,26 +195,25 @@ export default {
       return this.startPitch * factor;
     },
   },
-  mounted() {
-    // const vf = new Vex.Flow.Factory({
-    //   renderer: { elementId: "boo", width: 500, height: 200 },
-    // });
-    // const score = vf.EasyScore();
-    // const system = vf.System();
-    // system
-    //   .addStave({
-    //     voices: [
-    //       score.voice(
-    //         score
-    //           .tuplet(score.beam(score.notes("C#4/8, C4, C4")))
-    //           .concat(score.tuplet(score.beam(score.notes("C#4/8, C4, C4"))))
-    //           .concat(score.tuplet(score.beam(score.notes("C#4/8, C4, C4"))))
-    //           .concat(score.tuplet(score.beam(score.notes("C#4/8, C4, C4"))))
-    //       ),
-    //     ],
-    //   })
-    //   .addClef("treble");
-    // vf.draw();
+  computed: {
+    seq() {
+      let sequence = []
+      for (let i = 0; i < this.triadNum; i++) {
+        let next =
+          i > 0
+            ? this.nextTriad(sequence, i)
+            : this.triadPattern[i].tones.map((x) => x);
+        if (utility.getCycle(this.directionPattern, i) < 0)
+          next = next.reverse();
+        sequence = sequence.concat(next);
+      }
+      
+      return sequence;
+    },
+    noteSequence(){
+      console.log(utility.convertSequence(this.seq));
+      return utility.convertSequence(this.seq);
+    }
   },
 };
 </script>
