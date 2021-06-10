@@ -6,7 +6,10 @@
     <section class="flex flex-wrap justify-center">
       <div class="ma4">
         <h3>Sequence Length</h3>
-        <input class="ma4" type="number" v-model="triadNum" />
+        <input class="ma4" type="number" v-model="pattern.length" />
+        <h3>Starting Pitch</h3>
+        <select v-model="pitches"></select>
+        <select v-model="octaves"></select>
       </div>
       <div class="ma4">
         <h3>Half Steps</h3>
@@ -24,16 +27,20 @@
             Down
           </button>
         </div>
-        <span v-for="(step,index) in halfStepPattern" :key="index" class="ma1 pa1 ba">{{
-          step
-        }}</span>
+        <span
+          @click="pattern.step.splice(index, 1)"
+          v-for="(step, index) in pattern.step"
+          :key="index"
+          class="f6 link dim br1 ph3 pv2 mb2 dib bg-blue"
+          >{{ step }}</span
+        >
       </div>
 
       <div class="ma4">
         <h3>Triad Pattern</h3>
-        <div class="ma3">
+        <div class="ma3 flex flex-wrap">
           <button
-            v-for="(tri,index) in triads"
+            v-for="(tri, index) in triads"
             :key="index"
             @click="addTriad(tri)"
             class="f6 link dim br1 ph3 pv2 mb2 dib white bg-black"
@@ -41,47 +48,65 @@
             {{ tri.name }}
           </button>
         </div>
-        <span v-for="(tri,index) in triadPattern" :key="index" class="ma1 pa1 ba">{{
-          tri.name
-        }}</span>
+        <button
+          @click="pattern.triads.splice(index, 1)"
+          v-for="(tri, index) in pattern.triads"
+          :key="index"
+          class="f6 link dim br1 ph3 pv2 mb2 dib bg-blue"
+        >
+          {{ tri.name }}
+        </button>
       </div>
 
       <div class="ma4">
         <h3>Direction Pattern</h3>
         <div class="ma3">
           <button
-            @click="directionPattern.push(1)"
+            @click="pattern.dir.push(1)"
             class="f6 link dim br1 ph3 pv2 mb2 dib white bg-black"
           >
             Up
           </button>
           <button
-            @click="directionPattern.push(-1)"
+            @click="pattern.dir.push(-1)"
             class="f6 link dim br1 ph3 pv2 mb2 dib white bg-black"
           >
             Down
           </button>
         </div>
         <div class="ma3">
-          <span v-for="(dir,index) in directionPattern" :key="index" class="ma1 pa1 ba">{{
-            dir
-          }}</span>
+          <span
+            @click="pattern.dir.splice(index, 1)"
+            v-for="(dir, index) in pattern.dir"
+            :key="index"
+            class="f6 link dim br1 ph3 pv2 mb2 dib bg-blue"
+            >{{ dir }}</span
+          >
         </div>
       </div>
       <!-- <div id="boo"></div> -->
+      <div>
+        <button
+          @click="clear"
+          class="f6 link dim br1 ph3 pv2 mb2 dib white bg-black"
+        >
+          <!-- <i class="fas fa-camera"></i> -->
+          <font-awesome-icon icon="fa-arrow-right" />
+        </button>
+      </div>
     </section>
     <section>
       <div class="ma4">
-        <h3>Play Seqence</h3>
-        <div>
-          <input
-            type="range"
-            min="30"
-            max="500"
-            value="120"
-            class="slider"
+        <h3>Play Sequence</h3>
+        <div class="w4 dib pv4">
+          <label for="tempo">Tempo</label>
+          <vue-slider
             v-model="bpm"
-          />
+            id="tempo"
+            :min="30"
+            :max="400"
+            tooltip="always"
+          ></vue-slider>
         </div>
         <div>
           <button
@@ -90,26 +115,17 @@
           >
             Play
           </button>
-        </div>
-        <div>
-          <button
-            @click="clear"
-            class="f6 link dim br1 ph3 pv2 mb2 dib white bg-black"
-          >
-            Clear
-          </button>
           <button
             @click="stop"
             class="f6 link dim br1 ph3 pv2 mb2 dib white bg-black"
           >
             Stop
           </button>
-          <!-- <button @click="playTone" class="f6 link dim br1 ph3 pv2 mb2 dib white bg-black">Play Tone</button> -->
         </div>
       </div>
     </section>
     <section>
-      <notation  :noteSequence="noteSequence"></notation>
+      <notation :noteSequence="noteSequence"></notation>
     </section>
     <section>
       <piano-chart :sequence="noteSequence" :interval="interval"></piano-chart>
@@ -123,97 +139,125 @@ import * as utility from "../utility.js";
 import * as Tone from "tone";
 import PianoChart from "./PianoChart.vue";
 import Notation from "./Notation.vue";
-
+import VueSlider from "vue-slider-component";
+import "vue-slider-component/theme/default.css";
+import _ from "lodash";
+const initPattern = {
+  step: [1],
+  dir: [1],
+  triads: [triads[0]],
+  length: 3,
+};
 export default {
   name: "SequenceExplorer",
   components: {
     PianoChart,
     Notation,
+    VueSlider,
   },
   data() {
     return {
       interval: 1000,
       speed: 0.2,
-      startPitch: 262, //middle C (c3)
-      triadNum: 3,
+      refPitch: 261.6256, //middle C (c3)
+      startPitch: 0,
       triads: triads,
-      triadPattern: [triads[0]],
-      halfStepPattern: [-1],
-      directionPattern: [1],
+      pattern: _.cloneDeep(initPattern),
       tone: new Tone.Synth().toDestination(),
       toneSequence: null,
       bpm: 120,
+      pitches: utility.notes,
+      octaves: utility.octaves,
+      seq: [],
     };
   },
   methods: {
-    clear() {
-      this.triadPattern = [triads[0]];
-      this.halfStepPattern = [-1];
-      this.directionPattern = [1];
-      // this.noteSequence = [];
-      this.triadNum = 3;
+    clear: function () {
+      this.pattern = _.cloneDeep(initPattern);
     },
-    addTriad(tri) {
-      this.triadPattern.push(tri);
+    addTriad: function (tri) {
+      this.pattern.triads.push(tri);
     },
-    addHalfStep(i) {
-      this.halfStepPattern.push(i);
+    addHalfStep: function (i) {
+      this.pattern.step.push(i);
     },
-    nextTriad(sequence, i) {
-      const max = sequence.reduce((a, b) => {
-        return Math.max(a, b);
-      });
-      const min = sequence.reduce((a, b) => {
-        return Math.min(a, b);
-      });
-      const halfStep = utility.getCycle(this.halfStepPattern, i);
+    nextTriad: function (sequence, i) {
+      const halfStep = utility.getCycle(this.pattern.step, i);
       const startingPoint = sequence[sequence.length - 1] + halfStep;
-      let subSeq = utility.getCycle(this.triadPattern, i).tones.map((x) => x); //get the next triad shape
-      // console.log(subSeq)
-      if (utility.getCycle(this.directionPattern, i) < 0) {
-        subSeq = subSeq.map((x) => -1 * x);
+      const shape = this.getNext(this.pattern.triads, i).tones; //get the next triad shape
+      let subSeq = _.cloneDeep(shape);
+      if (utility.getCycle(this.pattern.dir, i) < 0){
+        subSeq = shape.map(x => x - _.max(shape))
       }
       subSeq = subSeq.map((x) => x + startingPoint);
       return subSeq;
     },
-    stop() {
+    stop: function () {
       Tone.Transport.stop();
     },
-    playSeq() {
-      const now = Tone.now();
-      this.toneSequence = new Tone.Sequence((time, note) => {
-        this.tone.triggerAttackRelease(note, 0.1, time);
-        // subdivisions are given as subarrays
-      }, this.noteSequence).start(0);
-      this.toneSequence.loop = false;
+    playSeq: function () {
       Tone.Transport.bpm.value = this.bpm;
       Tone.Transport.start();
     },
-    frequency(i) {
+    frequency: function (i) {
       const a = Math.pow(2.0, 1.0 / 12.0);
       const factor = Math.pow(a, i - 9);
-      return this.startPitch * factor;
+      return this.refPitch * factor;
     },
-  },
-  computed: {
-    seq() {
-      let sequence = []
-      for (let i = 0; i < this.triadNum; i++) {
+
+    getNext: function (arr, i) {
+      return utility.getCycle(arr, i);
+    },
+    buildSeq: function () {
+      let sequence = [];
+      if (!this.parametersValid) return sequence;
+      for (let i = 0; i < this.pattern.length; i++) {
         let next =
           i > 0
             ? this.nextTriad(sequence, i)
-            : this.triadPattern[i].tones.map((x) => x);
-        if (utility.getCycle(this.directionPattern, i) < 0)
-          next = next.reverse();
+            : this.triads[0].tones.map((x) => x);
+        if (utility.getCycle(this.pattern.dir, i) < 0) next = next.reverse();
         sequence = sequence.concat(next);
       }
-      
       return sequence;
     },
-    noteSequence(){
-      console.log(utility.convertSequence(this.seq));
-      return utility.convertSequence(this.seq);
-    }
+  },
+  computed: {
+    noteSequence: function () {
+      if (this.seq.length > 0) {
+        console.log(utility.convertSequence(this.seq));
+        return utility.convertSequence(this.seq);
+      }
+      return [];
+    },
+    parametersValid: function () {
+      return !!(
+        this.pattern.triads.length &&
+        this.pattern.step.length &&
+        this.pattern.dir.length &&
+        this.pattern.length
+      );
+    },
+  },
+  mounted: function () {
+    this.seq = this.buildSeq();
+    const now = Tone.now();
+    this.tone = new Tone.AMSynth().toDestination();
+    this.toneSequence = new Tone.Sequence((time, note) => {
+      this.tone.triggerAttackRelease(note, 0.1, time);
+      // subdivisions are given as subarrays
+    }, this.noteSequence).start(0);
+    this.toneSequence.loop = false;
+  },
+  beforeUpdate: function () {
+    this.seq = this.buildSeq();
+    const now = Tone.now();
+    this.tone = new Tone.AMSynth().toDestination();
+    this.toneSequence = new Tone.Sequence((time, note) => {
+      this.tone.triggerAttackRelease(note, 0.1, time);
+      // subdivisions are given as subarrays
+    }, this.noteSequence).start(0);
+    this.toneSequence.loop = false;
   },
 };
 </script>

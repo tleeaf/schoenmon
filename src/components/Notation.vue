@@ -9,7 +9,6 @@
 <script>
 import Vex from "vexflow";
 import _ from "lodash";
-import { log } from "tone/build/esm/core/util/Debug";
 const VF = Vex.Flow;
 
 function convertNote(note) {
@@ -31,7 +30,7 @@ export default {
     },
   },
   methods: {
-    createNotation() {
+    createNotation: function() {
       const div = this.$refs.notation;
       console.info(div);
       [].slice.call(div.children).forEach(function(child) {div.removeChild(child)});
@@ -81,7 +80,7 @@ export default {
       voice.setStrict(false);
     },
   },
-  mounted() {
+  mounted: function() {
     this.createNotation();
   },
   computed: {},
