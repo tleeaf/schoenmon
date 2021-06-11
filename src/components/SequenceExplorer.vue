@@ -91,7 +91,7 @@
           class="f6 link dim br1 ph3 pv2 mb2 dib white bg-black"
         >
           <!-- <i class="fas fa-camera"></i> -->
-          <font-awesome-icon icon="fa-arrow-right" />
+          <font-awesome-icon icon="redo" />
         </button>
       </div>
     </section>
@@ -123,6 +123,19 @@
           </button>
         </div>
       </div>
+      <div>
+        <span v-for="chord in chords" :key="chord.quality" class="ma2">
+          <label :for="chord.quality" class="ma1">{{ chord.quality }}</label>
+          <input
+            type="radio"
+            :value="chord"
+            :id="chord.quality"
+            name="chord"
+            v-model="selectedChord"
+          />
+        </span>
+        <button @click="playChord">Play Chord</button>
+      </div>
     </section>
     <section>
       <notation :noteSequence="noteSequence"></notation>
@@ -134,7 +147,7 @@
 </template>
 
 <script>
-import { triads } from "../triads.js";
+import { triads, chords } from "../triads.js";
 import * as utility from "../utility.js";
 import * as Tone from "tone";
 import PianoChart from "./PianoChart.vue";
@@ -169,6 +182,9 @@ export default {
       pitches: utility.notes,
       octaves: utility.octaves,
       seq: [],
+      chords: chords,
+      selectedChord: null,
+      chordSynth: new Tone.PolySynth().toDestination()
     };
   },
   methods: {
@@ -186,8 +202,8 @@ export default {
       const startingPoint = sequence[sequence.length - 1] + halfStep;
       const shape = this.getNext(this.pattern.triads, i).tones; //get the next triad shape
       let subSeq = _.cloneDeep(shape);
-      if (utility.getCycle(this.pattern.dir, i) < 0){
-        subSeq = shape.map(x => x - _.max(shape))
+      if (utility.getCycle(this.pattern.dir, i) < 0) {
+        subSeq = shape.map((x) => x - _.max(shape));
       }
       subSeq = subSeq.map((x) => x + startingPoint);
       return subSeq;
@@ -198,6 +214,16 @@ export default {
     playSeq: function () {
       Tone.Transport.bpm.value = this.bpm;
       Tone.Transport.start();
+      this.playChord();
+    },
+    playChord: function () {
+      console.log("chord")
+      Tone.context.resume();
+      const now = Tone.now();
+      const chord = new Tone.PolySynth().toDestination();
+      chord.set({ volume: -5 });
+      this.chordSynth.triggerAttackRelease(this.chordNotes,10)
+      // this.chordSynth.triggerAttackRelease(["C3","E3","G3"], 1);
     },
     frequency: function (i) {
       const a = Math.pow(2.0, 1.0 / 12.0);
@@ -225,8 +251,13 @@ export default {
   computed: {
     noteSequence: function () {
       if (this.seq.length > 0) {
-        console.log(utility.convertSequence(this.seq));
         return utility.convertSequence(this.seq);
+      }
+      return [];
+    },
+    chordNotes: function () {
+      if (this.selectedChord) {
+        return utility.convertSequence(this.selectedChord.tones);
       }
       return [];
     },
