@@ -113,13 +113,13 @@
             @click="playSeq"
             class="f6 link dim br1 ph3 pv2 mb2 dib white bg-black"
           >
-            Play
+            <font-awesome-icon icon="play"></font-awesome-icon>
           </button>
           <button
             @click="stop"
             class="f6 link dim br1 ph3 pv2 mb2 dib white bg-black"
           >
-            Stop
+            <font-awesome-icon icon="stop"></font-awesome-icon>
           </button>
         </div>
       </div>
@@ -210,6 +210,7 @@ export default {
     },
     stop: function () {
       Tone.Transport.stop();
+      // Tone.Transport.dispose();
     },
     playSeq: function () {
       Tone.Transport.bpm.value = this.bpm;
@@ -271,6 +272,7 @@ export default {
     },
   },
   mounted: function () {
+    this.toneSequence.dispose();
     this.seq = this.buildSeq();
     const now = Tone.now();
     this.tone = new Tone.AMSynth().toDestination();
