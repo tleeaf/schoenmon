@@ -124,8 +124,12 @@
         </div>
       </div>
       <div>
-        <span v-for="chord in chords" :key="chord.quality" class="ma2">
-          <label :for="chord.quality" class="ma1">{{ chord.quality }}</label>
+        <span
+          v-for="chord in chords"
+          :key="chord.quality"
+          class="white bg-black pa3"
+        >
+          <label :for="chord.quality" class="f6 pr3">{{ chord.quality }}</label>
           <input
             type="radio"
             :value="chord"
@@ -134,7 +138,7 @@
             v-model="selectedChord"
           />
         </span>
-        <button @click="playChord">Play Chord</button>
+        <!-- <button @click="playChord">Play Chord</button> -->
       </div>
     </section>
     <section>
@@ -184,7 +188,7 @@ export default {
       seq: [],
       chords: chords,
       selectedChord: null,
-      chordSynth: new Tone.PolySynth().toDestination()
+      chordSynth: new Tone.PolySynth().toDestination(),
     };
   },
   methods: {
@@ -210,7 +214,6 @@ export default {
     },
     stop: function () {
       Tone.Transport.stop();
-      // Tone.Transport.dispose();
     },
     playSeq: function () {
       Tone.Transport.bpm.value = this.bpm;
@@ -218,12 +221,12 @@ export default {
       this.playChord();
     },
     playChord: function () {
-      console.log("chord")
+      console.log("chord");
       Tone.context.resume();
       const now = Tone.now();
       const chord = new Tone.PolySynth().toDestination();
-      chord.set({ volume: -5 });
-      this.chordSynth.triggerAttackRelease(this.chordNotes,10)
+      chord.set({ volume: -10 });
+      this.chordSynth.triggerAttackRelease(this.chordNotes, 2);
       // this.chordSynth.triggerAttackRelease(["C3","E3","G3"], 1);
     },
     frequency: function (i) {
@@ -247,6 +250,18 @@ export default {
         sequence = sequence.concat(next);
       }
       return sequence;
+    },
+    updateParams: function () {
+      if (this.toneSequence) this.toneSequence.dispose();
+      if (this.tone) this.tone.dispose();
+      this.seq = this.buildSeq();
+      const now = Tone.now();
+      this.tone = new Tone.AMSynth().toDestination();
+      this.toneSequence = new Tone.Sequence((time, note) => {
+        this.tone.triggerAttackRelease(note, 0.1, time);
+        // subdivisions are given as subarrays
+      }, this.noteSequence).start(0);
+      this.toneSequence.loop = false;
     },
   },
   computed: {
@@ -272,25 +287,10 @@ export default {
     },
   },
   mounted: function () {
-    this.toneSequence.dispose();
-    this.seq = this.buildSeq();
-    const now = Tone.now();
-    this.tone = new Tone.AMSynth().toDestination();
-    this.toneSequence = new Tone.Sequence((time, note) => {
-      this.tone.triggerAttackRelease(note, 0.1, time);
-      // subdivisions are given as subarrays
-    }, this.noteSequence).start(0);
-    this.toneSequence.loop = false;
+    this.updateParams();
   },
   beforeUpdate: function () {
-    this.seq = this.buildSeq();
-    const now = Tone.now();
-    this.tone = new Tone.AMSynth().toDestination();
-    this.toneSequence = new Tone.Sequence((time, note) => {
-      this.tone.triggerAttackRelease(note, 0.1, time);
-      // subdivisions are given as subarrays
-    }, this.noteSequence).start(0);
-    this.toneSequence.loop = false;
+    this.updateParams();
   },
 };
 </script>
