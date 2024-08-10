@@ -174,7 +174,6 @@ export default {
   },
   data() {
     return {
-      interval: 1000,
       speed: 0.2,
       refPitch: 261.6256, //middle C (c3)
       startPitch: 0,
@@ -217,6 +216,7 @@ export default {
     },
     playSeq: function () {
       Tone.Transport.bpm.value = this.bpm;
+      
       Tone.Transport.start();
       this.playChord();
     },
@@ -261,10 +261,13 @@ export default {
         this.tone.triggerAttackRelease(note, 0.1, time);
         // subdivisions are given as subarrays
       }, this.noteSequence).start(0);
-      this.toneSequence.loop = false;
+      // this.toneSequence.loop = false;
     },
   },
   computed: {
+    interval: function () {
+      return 60000 / this.bpm / 2 ;
+    },
     noteSequence: function () {
       if (this.seq.length > 0) {
         return utility.convertSequence(this.seq);

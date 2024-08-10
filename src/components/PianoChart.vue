@@ -28,7 +28,10 @@ export default {
   },
   methods: {
     test() {
-      this.clearAllNotes();
+      this.piano.destroy()
+      this.piano = new Instrument(this.$refs.pianoContainer);
+      this.piano.create();
+      // this.clearAllNotes();
       const p  = this.piano
       const s = this.sequence
       for (let i = 0; i < this.sequence.length; i++) {

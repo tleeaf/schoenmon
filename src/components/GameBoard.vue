@@ -4,7 +4,7 @@
       <div v-for="i in tones" :key="i" class="br-100">
         <button
           @click="inputAnswer(i)"
-          class="simon-button br-100 ma1 h4-ns w4-ns h3 w3 bn"
+          class="simon-button br-100 ma1 bn"
           :class="btnClass(i)"
         >
           <div class="note-name f4 f1-ns b">
@@ -12,24 +12,25 @@
           </div>
         </button>
       </div>
-    </div>
-    <div class="v-mid">
-      <div class="f3 mv5" v-show="gameOver">Game Over</div>
+        <div class="center relative">
+      <div class="f3 mv3 relative bottom-2" v-show="gameOver">Game Over</div>
       <div class="">
         <button
           @click="start"
           v-show="!playing"
-          class="h3-ns w3-ns h3 w3 br-100 grow"
+          class="h3 w3 b--black-40 br-100 grow"
         >
           Start
         </button>
       </div>
       <div>
-        <span v-show="playing" class="f-headline-ns f1">
+        <span v-show="playing" class=" center f-headline-ns f1">
           {{ score }}
         </span>
       </div>
     </div>
+    </div>
+  
     <!-- 
     <div>
       {{ seq }}
@@ -44,12 +45,13 @@
 </template>
 
 <script>
+import * as Tone from "tone";
 export default {
   data() {
     return {
       tones: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
       interval: 1000,
-      speed: 0.17,
+      speed: 0.98,
       activeTone: null,
       audioContext: new AudioContext(),
       colors: [
@@ -89,6 +91,7 @@ export default {
       currentState: null,
       currentIndex: 0,
       startPitch: 220,
+      synth: new Tone.Synth().toDestination(),
     };
   },
   methods: {
@@ -125,6 +128,7 @@ export default {
       );
     },
     play(i, time) {
+      // this.synth.triggerAttackRelease("C4", "8n")
       if (!time) time = this.audioContext.currentTime;
       const osc = this.audioContext.createOscillator();
       osc.frequency.setValueAtTime(this.frequency(i), time);
@@ -167,6 +171,7 @@ export default {
     playSeq() {
       for (let i = 0; i < this.seq.length; i++) {
         const noteToPlay = this.seq[i];
+        console.log(noteToPlay);
         this.play(
           noteToPlay,
           this.audioContext.currentTime +
@@ -212,6 +217,8 @@ button:focus {
   opacity: 0.6;
 }
 .simon-button {
+  width: 100px;
+  height: 100px;
   -moz-box-shadow: inset 0 0 10px #000000;
   -webkit-box-shadow: inset 0 0 10px #000000;
   box-shadow: inset 0 0 10px #000000;
@@ -271,13 +278,13 @@ $item-size: 10vw;
   }
 }
 
-@media only screen and(min-width: 600px) {
+@media only screen and (min-width: 600px ) {
   .board-container {
     @include on-circle(12, $board-size-ns, $item-size-ns);
   }
 }
 
-@media only screen and(max-width: 600px) {
+@media only screen and (max-width: 600px) {
   body {
     background-color: red;
     color: red;

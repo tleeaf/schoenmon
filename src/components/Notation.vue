@@ -1,6 +1,6 @@
 <template>
   <div>
-    <button @click="createNotation">Recalc</button>
+    <!-- <button @click="createNotation">Recalc</button> -->
     <div ref="notation" id="boo"></div>
     
   </div>
@@ -21,6 +21,7 @@ export default {
     return {
       context: {},
       stave: {},
+      staves: [],
     };
   },
   props: {
@@ -28,6 +29,11 @@ export default {
       type: Array,
       default: () => ["C4", "C5", "C4", "C4", "C4", "C5", "C4", "C4", "C4"],
     },
+  },
+  watch: {
+    noteSequence(newValue, oldValue) {
+      this.createNotation();
+    }
   },
   methods: {
     createNotation: function() {
@@ -37,7 +43,7 @@ export default {
       const renderer = new VF.Renderer(div, VF.Renderer.Backends.SVG);
 
       // Size our SVG:
-      renderer.resize(500, 500);
+      renderer.resize(500, 200);
 
       // And get a drawing context:
       this.context = renderer.getContext();
