@@ -3,6 +3,12 @@
     <section>
       <h2>Triadic-Chromatic Sequence Generator</h2>
     </section>
+    <section>
+      <notation :noteSequence="noteSequence"></notation>
+    </section>
+    <section>
+      <piano-chart :sequence="noteSequence" :interval="interval"></piano-chart>
+    </section>
     <section class="flex flex-wrap justify-center">
       <div class="ma4">
         <h3>Sequence Length</h3>
@@ -141,12 +147,7 @@
         <!-- <button @click="playChord">Play Chord</button> -->
       </div>
     </section>
-    <section>
-      <notation :noteSequence="noteSequence"></notation>
-    </section>
-    <section>
-      <piano-chart :sequence="noteSequence" :interval="interval"></piano-chart>
-    </section>
+  
   </div>
 </template>
 
